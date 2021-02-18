@@ -1,32 +1,50 @@
 #!/bin/bash
 
+cd $(dirname "$0")
+
 function usage {
 	cat << EOM
+Please write your information in "config" first.	
+
 Usage: $(basename "$0") [OPTION]...
+	* is necessory parametor
+	& is necessory if you didnt confirm config yet
+	
 	-h	help
-	-a value		your Apple ID
-	-n value		appName or path
-	-p value		app specifired password
+&	-a value		your Apple ID
+*	-n value		appName or path
+&	-p value		app specifired password
 	-t value		title of installer
-	-i value		identifier (ex. com.example.appname)
-	-v value		version (ex. 1.0.0)
-	-d value		Developer ID Application (ex "Developer ID Installer: <Your Name> (XXXXXXXXXX)" ) 
-	-e value		Developer ID Installer (ex "Developer ID Installer: <Your Name> (XXXXXXXXXX)" )
+*	-i value		identifier (ex. com.example.appname)
+*	-v value		version (ex. 1.0.0)
+&	-d value		Developer ID Application (ex "Developer ID Installer: <Your Name> (XXXXXXXXXX)" ) 
+&	-e value		Developer ID Installer (ex "Developer ID Installer: <Your Name> (XXXXXXXXXX)" )
 	
 	for example
 	$(basename "$0") -a "YourAppleID" -n "emptyExample" -p "xxxx-xxxx-xxxx-xxxx" -t "Empty Example" -i "com.example.emptyExample" -v "1.0.0" -da "Developer ID Installer: <Your Name> (XXXXXXXXXX)" -di "Developer ID Installer: <Your Name> (XXXXXXXXXX)" 
 EOM
 }
 
-appleId=""
 appName=""
 workingDir=""
-appPass=""
 installerTitle=""
 identifier=""
 version=""
-developerIDApplication=""
-developerIDInstaller=""
+
+echo $1
+echo $2
+echo $3
+echo $4
+
+# get config
+if [ -e config ] ; then
+	source config
+	echo "Config loaded."
+else
+	cp config-example config
+	echo "Error: No ID information. Please write your information in config first."
+	exit
+fi
 
 while getopts ":a:n:p:t:i:v:d:e:h" optKey; do
 	case "$optKey" in
@@ -75,7 +93,7 @@ done
 # check options
 optionOk=0
 if [ "$appleId" == "" ] ; then
-	echo "Error no option: -a <YourAppleID>"
+	echo "Error no option: -a <YourAppleID> in config"
 	optionOk=1
 fi
 if [ "$appName" == "" ] ; then
@@ -83,12 +101,11 @@ if [ "$appName" == "" ] ; then
 	optionOk=1
 fi
 if [ "$appPass" == "" ] ; then
-	echo "Error no option: -p <appPass>"
+	echo "Error no option: -p <appPass> in config"
 	optionOk=1
 fi
 if [ "$installerTitle" == "" ] ; then
-	echo "Error no option: -t <installerTitle>"
-	optionOk=1
+	installerTitle="$appName"
 fi
 if [ "$identifier" == "" ] ; then
 	echo "Error no option: -i <identifier>"
@@ -99,11 +116,11 @@ if [ "$version" == "" ] ; then
 	optionOk=1
 fi
 if [ "$developerIDApplication" == "" ] ; then
-	echo "Error no option: -d <developerIDApplication>"
+	echo "Error no option: -d <developerIDApplication> in config"
 	optionOk=1
 fi
 if [ "$developerIDInstaller" == "" ] ; then
-	echo "Error no option: -e <developerIDInstaller>"
+	echo "Error no option: -e <developerIDInstaller> in config"
 	optionOk=1
 fi
 if [ $optionOk -eq 0 ] ;then
@@ -180,14 +197,14 @@ pkgbuild --analyze \
 #debug
 #less packages.plist
 
-pkgbuild "$appName.pkg" --root Applications --component-plist packages.plist --identifier $identifier --version 1.0.0 --install-location "/Applications"
+pkgbuild "tmp-$appName.pkg" --root Applications --component-plist packages.plist --identifier $identifier --version 1.0.0 --install-location "/Applications"
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: pkgbuild error."
 	exit
 fi
 
-productbuild --synthesize --package "$appName.pkg" Distribution.xml
+productbuild --synthesize --package "tmp-$appName.pkg" Distribution.xml
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: productbuild --synthesize error."
@@ -204,23 +221,25 @@ sed -e "s/\<pkg-ref/\<title\>$installerTitle\<\/title\>\n    \<allowed-os-versio
 mv tmp Distribution.xml
 
 productbuild --distribution Distribution.xml \
-	--package-path "$appName.pkg" \
-	"$appName-Distribution.pkg"
+	--package-path "tmp-$appName.pkg" \
+	"tmp-$appName-Distribution.pkg"
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: productbuild --distribution error."
 	exit
 fi
 
-signedPackage="$appName-Distribution_SIGNED.pkg"
+signedPackage="$appName.pkg"
 productsign --sign "$developerIDInstaller" \
-	"$appName-Distribution.pkg" \
+	"tmp-$appName-Distribution.pkg" \
 	"$signedPackage"
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: productsign error."
 	exit
 fi
+
+rm tmp*.pkg
 
 pkgutil --check-signature "$signedPackage"
 

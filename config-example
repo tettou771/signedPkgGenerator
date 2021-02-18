@@ -1,0 +1,14 @@
+# your Apple ID
+# for ex. "yourid@example.com"
+appleId=""
+
+# app specific password
+# for ex. "xxxx-xxxx-xxxx-xxxx"
+appPass=""
+
+# ID in keychain
+# for ex. "Developer ID Application: Your Name (XXXXXXXXXX)"
+developerIDApplication=""
+
+# for ex. "Developer ID Installer: Your Name (XXXXXXXXXX)"
+developerIDInstaller=""
