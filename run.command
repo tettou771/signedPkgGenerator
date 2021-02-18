@@ -12,7 +12,7 @@ Usage: $(basename "$0") [OPTION]...
 	
 	-h	help
 &	-a value		your Apple ID
-*	-n value		appName or path
+*	-n value		app path
 &	-p value		app specifired password
 	-t value		title of installer
 *	-i value		identifier (ex. com.example.appname)
@@ -30,11 +30,6 @@ workingDir=""
 installerTitle=""
 identifier=""
 version=""
-
-echo $1
-echo $2
-echo $3
-echo $4
 
 # get config
 if [ -e config ] ; then
@@ -89,6 +84,13 @@ while getopts ":a:n:p:t:i:v:d:e:h" optKey; do
 			;;
 	esac
 done
+
+# get app specific config
+pkgconfigpath=$workingDir/pkgconfig
+if [ -e $pkgconfigpath ] ; then
+	source $pkgconfigpath
+	echo "pkgconfig loaded."
+fi
 
 # check options
 optionOk=0
