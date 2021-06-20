@@ -1,5 +1,6 @@
 #!/bin/bash
 
+execDir=`pwd`
 cd $(dirname "$0")
 
 function usage {
@@ -8,17 +9,13 @@ Please write your information in "config" first.
 
 Usage: $(basename "$0") [OPTION]...
 	* is necessory parametor
-	& is necessory if you didnt confirm config yet
 	
 	-h	help
-&	-a value		your Apple ID
-*	-n value		app path
-&	-p value		app specifired password
+*	-a value		app path
+*   -e value        .entitlements path
 	-t value		title of installer
 *	-i value		identifier (ex. com.example.appname)
 *	-v value		version (ex. 1.0.0)
-&	-d value		Developer ID Application (ex "Developer ID Installer: <Your Name> (XXXXXXXXXX)" ) 
-&	-e value		Developer ID Installer (ex "Developer ID Installer: <Your Name> (XXXXXXXXXX)" )
 	
 	for example
 	$(basename "$0") -a "YourAppleID" -n "emptyExample" -p "xxxx-xxxx-xxxx-xxxx" -t "Empty Example" -i "com.example.emptyExample" -v "1.0.0" -da "Developer ID Installer: <Your Name> (XXXXXXXXXX)" -di "Developer ID Installer: <Your Name> (XXXXXXXXXX)" 
@@ -26,6 +23,7 @@ EOM
 }
 
 appName=""
+entitlementsPath=""
 workingDir=""
 installerTitle=""
 identifier=""
@@ -44,21 +42,17 @@ fi
 while getopts ":a:n:p:t:i:v:d:e:h" optKey; do
 	case "$optKey" in
 		a)
-			appleId=${OPTARG}
-			echo "appleId $appleId"
-			;;
-		n)
 			appNameWithExt=$(basename "${OPTARG}")
 			appName=${appNameWithExt%\.*}
-			workingDir=$(dirname "${OPTARG}")
+			workingDir=$(dirname "${execDir}/${OPTARG}")
 			echo "appNameWithExt $appNameWithExt"
 			echo "appName $appName"
 			echo "workingDir $workingDir"
 			;;
-		p)
-			appPass=${OPTARG}
-			echo "appPass $appPass"
-			;;
+        e)
+            entitlementsPath=${execDir}/${OPTARG}
+            echo "entitlements $entitlementsPath"
+            ;;
 		t)
 			installerTitle=${OPTARG}
 			echo "installerTitle $installerTitle"
@@ -70,14 +64,6 @@ while getopts ":a:n:p:t:i:v:d:e:h" optKey; do
 		v)
 			version=${OPTARG}
 			echo "version $version"
-			;;
-		d)
-			developerIDApplication=${OPTARG}
-			echo "developerIDApplication $developerIDApplication"
-			;;
-		e)
-			developerIDInstaller=${OPTARG}
-			echo "developerIDInstaller $developerIDInstaller"
 			;;
 		h)
 			usage
@@ -98,13 +84,13 @@ if [ "$appleId" == "" ] ; then
 	echo "Error no option: -a <YourAppleID> in config"
 	optionOk=1
 fi
-if [ "$appName" == "" ] ; then
-	echo "Error no option: -n <appName>"
+if [ "$appPass" == "" ] ; then
+	echo "Error no option: -p <appPass>"
 	optionOk=1
 fi
-if [ "$appPass" == "" ] ; then
-	echo "Error no option: -p <appPass> in config"
-	optionOk=1
+if [ "$entitlementsPath" == "" ] ; then
+    echo "Error no option: -e <entitlementsPath>"
+    optionOk=1
 fi
 if [ "$installerTitle" == "" ] ; then
 	installerTitle="$appName"
@@ -143,15 +129,8 @@ if [ ! -e "$appName.app" ] ; then
 	exit
 fi
 
-entitlementsPath="../$appName.entitlements"
 if [ ! -e $entitlementsPath ] ; then
-	entitlementsPath="../${appName}Release.entitlements"
-fi
-if [ ! -e $entitlementsPath ] ; then
-	entitlementsPath="../${appName}Debug.entitlements"
-fi
-if [ ! -e $entitlementsPath ] ; then
-	echo "Plist $entitlementsPath is not founded."
+	echo "Entitlements $entitlementsPath is not founded."
 	echo "Please check sandbox settings."
 	exit
 fi
@@ -174,7 +153,6 @@ mkdir pkg
 mkdir pkg/Applications
 cp -r $appName.app pkg/Applications/
 cd pkg
-entitlementsPath="../$entitlementsPath"
 
 codesign --verify \
 	--sign "$developerIDApplication" \
