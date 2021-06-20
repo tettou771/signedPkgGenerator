@@ -9,5 +9,5 @@ sudo +x pkggen
 reccomend: add to PATH in .zshrc or .bashrc
 
 # show help
-./run.command -h
+pkggen -h
 ```
