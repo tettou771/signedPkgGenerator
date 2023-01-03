@@ -49,10 +49,10 @@ while getopts ":a:n:p:t:i:v:d:e:h" optKey; do
 			echo "appName $appName"
 			echo "workingDir $workingDir"
 			;;
-        e)
-            entitlementsPath=${execDir}/${OPTARG}
-            echo "entitlements $entitlementsPath"
-            ;;
+	        e)
+        		entitlementsPath=${execDir}/${OPTARG}
+            		echo "entitlements $entitlementsPath"
+            		;;
 		t)
 			installerTitle=${OPTARG}
 			echo "installerTitle $installerTitle"
@@ -81,7 +81,7 @@ fi
 # check options
 optionOk=0
 if [ "$appleId" == "" ] ; then
-	echo "Error no option: -a <YourAppleID> in config"
+	echo "Error no option: appleId in config"
 	optionOk=1
 fi
 if [ "$appPass" == "" ] ; then
@@ -135,13 +135,14 @@ if [ ! -e $entitlementsPath ] ; then
 	exit
 fi
 
-# "pkg" overwrite or exit?
-if [ -e "pkg" ] ; then
-	"Overwrite \"pkg\" directory ? y/N"
+# tmpdir overwrite or exit?
+tmpdir="pkgtmp"
+if [ -e $tmpdir ] ; then
+	"Overwrite \"$tmpdir\" directory ? y/N"
 	read key
 	if [ "$key" = "Y" -o "$key" = "y" ] ;then
-		echo "Delete pkg directory."
-		rm -rf pkg
+		echo "Delete $tmpdir directory."
+		rm -rf $tmpdir
 	else
 		echo "Exit"
 		exit
@@ -149,10 +150,10 @@ if [ -e "pkg" ] ; then
 fi
 
 echo "Start make signed pkg."
-mkdir pkg
-mkdir pkg/Applications
-cp -r $appName.app pkg/Applications/
-cd pkg
+mkdir $tmpdir
+mkdir $tmpdir/Applications
+cp -r $appName.app $tmpdir/Applications/
+cd $tmpdir
 
 codesign --verify \
 	--sign "$developerIDApplication" \
@@ -219,17 +220,20 @@ if [ $? -ne 0 ] ; then
 	exit
 fi
 
-rm tmp*.pkg
-
 pkgutil --check-signature "$signedPackage"
 
 xcrun altool --notarize-app \
 	--file "$signedPackage" \
 	--primary-bundle-id  $identifier \
 	--username $appleId \
-	--password $appPass
+	--password $appPass \
+	--asc-provider $ascProvider
 	
-if [ $? -ne 0 ] ; then  
+if [ $? -eq 0 ] ; then  
+	mv $signedPackage ..
+	cd ..
+	rm -rf $tmpdir
+else
 	echo "Error: xcrun error."
 	exit
 fi
