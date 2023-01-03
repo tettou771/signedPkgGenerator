@@ -2,6 +2,11 @@
 # for ex. "yourid@example.com"
 appleId=""
 
+# ProviderShortName
+# for ex. "ABCD123456"
+# this is optional
+ascProvider=""
+
 # app specific password
 # for ex. "xxxx-xxxx-xxxx-xxxx"
 appPass=""
