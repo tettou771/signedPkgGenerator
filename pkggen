@@ -18,7 +18,7 @@ Usage: $(basename "$0") [OPTION]...
 *	-v value		version (ex. 1.0.0)
 	
 	for example
-	$(basename "$0") -a "YourAppleID" -n "emptyExample" -p "xxxx-xxxx-xxxx-xxxx" -t "Empty Example" -i "com.example.emptyExample" -v "1.0.0" -da "Developer ID Installer: <Your Name> (XXXXXXXXXX)" -di "Developer ID Installer: <Your Name> (XXXXXXXXXX)" 
+	$(basename "$0") -a "YourAppleID" -n "emptyExample" -p "xxxx-xxxx-xxxx-xxxx" -t "Empty Example" -i "com.example.emptyExample" -v "1.0.0" -da "Developer ID Installer: <Your Name> (XXXXXXXXXX)" -di "Developer ID Installer: <Your Name> (XXXXXXXXXX)"
 EOM
 }
 
@@ -82,10 +82,6 @@ fi
 optionOk=0
 if [ "$appleId" == "" ] ; then
 	echo "Error no option: appleId in config"
-	optionOk=1
-fi
-if [ "$appPass" == "" ] ; then
-	echo "Error no option: -p <appPass>"
 	optionOk=1
 fi
 if [ "$entitlementsPath" == "" ] ; then
@@ -223,18 +219,16 @@ fi
 pkgutil --check-signature "$signedPackage"
 
 if [ "$ascProvider" == "" ] ; then
-	xcrun altool --notarize-app \
-		--file "$signedPackage" \
-		--primary-bundle-id  $identifier \
-		--username $appleId \
-		--password $appPass
+        xcrun notarytool submit "$signedPackage" \
+                --keychain-profile "AC_PASSWORD" \
+                --apple-id "$appleId" \
+                --wait
 else
-	xcrun altool --notarize-app \
-		--file "$signedPackage" \
-		--primary-bundle-id  $identifier \
-		--username $appleId \
-		--password $appPass \
-		--asc-provider $ascProvider
+        xcrun notarytool submit "$signedPackage" \
+                --keychain-profile "AC_PASSWORD" \
+                --apple-id "$appleId" \
+		--wait \
+                --asc-provider "$ascProvider"
 fi
 	
 if [ $? -eq 0 ] ; then  
