@@ -36,7 +36,7 @@ if [ -e config ] ; then
 else
 	cp config-example config
 	echo "Error: No ID information. Please write your information in config first."
-	exit
+	exit 1
 fi
 
 while getopts ":a:n:p:t:i:v:d:e:h" optKey; do
@@ -111,7 +111,7 @@ if [ $optionOk -eq 0 ] ;then
 	echo "options ok"
 else
 	echo "Please confirm all options."
-	exit
+	exit 1
 fi
 
 # go workingDir
@@ -122,26 +122,26 @@ fi
 # if app is not exist, exit
 if [ ! -e "$appName.app" ] ; then
 	echo "$appName.app is not founded."
-	exit
+	exit 1
 fi
 
 if [ ! -e $entitlementsPath ] ; then
 	echo "Entitlements $entitlementsPath is not founded."
 	echo "Please check sandbox settings."
-	exit
+	exit 1
 fi
 
 # tmpdir overwrite or exit?
 tmpdir="pkgtmp"
 if [ -e $tmpdir ] ; then
-	"Overwrite \"$tmpdir\" directory ? y/N"
+	echo "Overwrite \"$tmpdir\" directory ? y/N"
 	read key
 	if [ "$key" = "Y" -o "$key" = "y" ] ;then
 		echo "Delete $tmpdir directory."
 		rm -rf $tmpdir
 	else
 		echo "Exit"
-		exit
+		exit 1
 	fi
 fi
 
@@ -162,7 +162,7 @@ codesign --verify \
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: codesign error."
-	exit
+	exit 1
 fi
 
 pkgutil --check-signature "Applications/$appName.app"
@@ -174,18 +174,18 @@ pkgbuild --analyze \
 #debug
 #less packages.plist
 
-pkgbuild "tmp-$appName.pkg" --root Applications --component-plist packages.plist --identifier $identifier --version 1.0.0 --install-location "/Applications"
+pkgbuild "tmp-$appName.pkg" --root Applications --component-plist packages.plist --identifier $identifier --version "$version" --install-location "/Applications"
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: pkgbuild error."
-	exit
+	exit 1
 fi
 
 productbuild --synthesize --package "tmp-$appName.pkg" Distribution.xml
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: productbuild --synthesize error."
-	exit
+	exit 1
 fi
 
 #insert title
@@ -203,7 +203,7 @@ productbuild --distribution Distribution.xml \
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: productbuild --distribution error."
-	exit
+	exit 1
 fi
 
 signedPackage="$appName.pkg"
@@ -213,7 +213,7 @@ productsign --sign "$developerIDInstaller" \
 
 if [ $? -ne 0 ] ; then  
 	echo "Error: productsign error."
-	exit
+	exit 1
 fi
 
 pkgutil --check-signature "$signedPackage"
@@ -233,7 +233,7 @@ fi
 	
 if [ $? -ne 0 ] ; then
 	echo "Error: notarytool error."
-	exit
+	exit 1
 fi
 
 # Staple the notarization ticket to the package
@@ -241,7 +241,7 @@ xcrun stapler staple "$signedPackage"
 
 if [ $? -ne 0 ] ; then
 	echo "Error: stapler error."
-	exit
+	exit 1
 fi
 
 mv $signedPackage ..
