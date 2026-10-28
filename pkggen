@@ -171,6 +171,14 @@ pkgbuild --analyze \
 	--root Applications \
 	packages.plist
 
+# Disable relocation so the installer always installs to /Applications
+# (otherwise it overwrites any existing copy with the same bundle id, e.g. a build output)
+i=0
+while plutil -extract "$i" xml1 -o /dev/null packages.plist 2>/dev/null; do
+	plutil -replace "$i.BundleIsRelocatable" -bool NO packages.plist
+	i=$((i + 1))
+done
+
 #debug
 #less packages.plist
 
